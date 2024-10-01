@@ -1,5 +1,6 @@
 import os
 import openpyxl
+import re
 from win32com.client import Dispatch
 
 class ColumnsWidthAdjuster:
@@ -39,8 +40,6 @@ class ColumnsWidthAdjuster:
         elif method == 'openpyxl':
 
             self.autofit_openpyxl(sheetnames)
-
-
     
     def autofit_win32com(self, sheetnames=None):
         '''
@@ -117,12 +116,19 @@ class ColumnsWidthAdjuster:
     def autofit_openpyxl(self, sheetnames = None):
         wb = openpyxl.load_workbook(self.excelfp)
 
+        def is_cell_in_merged_range(cell):
+        # Iterate over all merged cell ranges in the worksheet
+            for merged_range in ws.merged_cells.ranges:
+                if cell.coordinate in merged_range:
+                    return True
+            return False
+
         for sheetname in wb.sheetnames:
             ws = wb[sheetname]
 
             max_column = ws.max_column
             max_row = ws.max_row
-            
+
             #assert False
             for col_index in range(1, max_column+1):
                 
@@ -130,12 +136,15 @@ class ColumnsWidthAdjuster:
 
                 max_width = 0
                 for row_index in range(1, max_row+1):
-                    
-                    value = ws.cell(row_index, col_index).value
+                    #value - ignore value if value reside in merged cell
+                    value = ws.cell(row_index, col_index).value if not is_cell_in_merged_range(ws[col_alpha+str(row_index)]) else None
                     value2 = "" if value is None else value
-                    
-                    
-                    width = len(str(value2))
+                    #value3 - removing HH:MM:SS from datetime string
+                    value3 = re.sub("\s*[\d]{2}\:[\d]{2}\:[\d]{2}$","",str(value2)) if re.match(".*\s*[\d]{2}\:[\d]{2}\:[\d]{2}$",str(value2)) else value2
+                    #value4 - removing decimals from numeric string (if any)
+                    value4 = round(value3,2) if str(value3).isnumeric() else value3
+
+                    width = len(str(value4))
 
                     
                     # update width
@@ -147,10 +156,10 @@ class ColumnsWidthAdjuster:
                     
                 # adjust
                 adjusted_width = (max_width + 2) * 1.2
-                if adjusted_width < 80:
+                if adjusted_width < 50:
                     ws.column_dimensions[col_alpha].width = adjusted_width
                 else:
-                    ws.column_dimensions[col_alpha].width = 80
+                    ws.column_dimensions[col_alpha].width = 50
                 
                 print (col_alpha, adjusted_width)
                 
