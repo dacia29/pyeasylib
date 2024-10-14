@@ -3,8 +3,9 @@ import openpyxl
 import re
 from win32com.client import Dispatch
 from datetime import datetime
+import time
 
-logfile = r"\\Devluna\d$\CODES_SJ\lunaflow\personal_workspace\logs\python_test.txt"
+logfile = r"\\Devluna\d$\CODES\lunaflow\personal_workspace\logs\python_test.txt"
 
 class ColumnsWidthAdjuster:
     '''
@@ -120,13 +121,20 @@ class ColumnsWidthAdjuster:
             f = open(logfile,'a')
             f.write(f"4\n")
             f.close()
+
+            time.sleep(3)
             
             if isinstance(sheetnames, list):
                 sn_list = sheetnames
             elif sheetnames is True:
                 sn_list = [ws.Name for ws in wb.Sheets]
             else:
-                raise ValueError(f"Invalid type for sheetnames: {type(sheetnames)}")
+                msg = f"Invalid type for sheetnames: {type(sheetnames)}"
+                f = open(logfile,'a')
+                f.write(f"{msg}\n")
+                f.close()
+                raise ValueError(msg)
+                
             
             f = open(logfile,'a')
             f.write(f"5\n")
